@@ -13,9 +13,11 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
 
+# .env variables setup, accessible through os.getenv("MY_VAR")
+load_dotenv()
 env_path = Path('.') / '.env'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
