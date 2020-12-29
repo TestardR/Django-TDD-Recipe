@@ -31,7 +31,7 @@ def auto_login_user(db, api_client):
     api_client.force_authenticate(user=user)
 
 
-class TestPublicUserApi():
+class TestPublicUserApi:
     """Test the users API (public)"""
 
     @pytest.mark.django_db
@@ -118,7 +118,7 @@ class TestPublicUserApi():
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-class TestPrivateUserApi():
+class TestPrivateUserApi:
     """Test the users API (private)"""
 
     def test_retrieve_profile_success(self, auto_login_user, api_client):
