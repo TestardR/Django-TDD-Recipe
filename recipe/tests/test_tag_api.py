@@ -58,17 +58,16 @@ class TestPublicTagsApi:
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-class PrivateTagsApiTests:
+class TestPrivateTagsApi:
     """Test the authorized user tags API"""
 
-    def test_retrieve_tags(self, auto_login_user, apli_client):
+    def test_retrieve_tags(self, auto_login_user, api_client):
         """Test retrieving tags"""
-        user = auto_login_user()
 
-        Tag.objects.create(user=user, name='Vegan')
-        Tag.objects.create(user=user, name='Dessert')
+        Tag.objects.create(user=auto_login_user, name='Vegan')
+        Tag.objects.create(user=auto_login_user, name='Dessert')
 
-        res = apli_client.get(TAGS_URL)
+        res = api_client.get(TAGS_URL)
 
         tags = Tag.objects.all().order_by('-name')
         serializer = TagSerializer(tags, many=True)
@@ -76,37 +75,36 @@ class PrivateTagsApiTests:
         assert res.status_code == status.HTTP_200_OK
         assert res.data == serializer.data
 
-    def test_tags_limited_to_user(self, auto_login_user, apli_client):
+    def test_tags_limited_to_user(self, auto_login_user, api_client):
         """Test that tags returned are for authenticated user"""
-        user = auto_login_user()
         user2 = get_user_model().objects.create_user(
             'other@test.com',
             'testpass'
         )
         Tag.objects.create(user=user2, name='Fruity')
-        tag = Tag.objects.create(user=user, name='Comfort Food')
+        tag = Tag.objects.create(user=auto_login_user, name='Comfort Food')
 
-        res = apli_client.get(TAGS_URL)
+        res = api_client.get(TAGS_URL)
 
         assert res.status_code == status.HTTP_200_OK
         assert len(res.data) == 1
         assert res.data[0]['name'] == tag.name
 
-    def test_create_tag_successful(self, apli_client):
+    def test_create_tag_successful(self, auto_login_user, api_client):
         """Test creating a new tag"""
         payload = {'name': 'Simple'}
-        apli_client.post(TAGS_URL, payload)
+        api_client.post(TAGS_URL, payload)
 
         exists = Tag.objects.filter(
-            user=self.user,
+            user=auto_login_user,
             name=payload['name']
         ).exists()
 
         assert exists == True
 
-    def test_create_tag_invalid(self, apli_client):
+    def test_create_tag_invalid(self, auto_login_user, api_client):
         """Test creating a new tag with invalid payload"""
         payload = {'name': ''}
-        res = apli_client.post(TAGS_URL, payload)
+        res = api_client.post(TAGS_URL, payload)
 
         assert res.status_code == status.HTTP_400_BAD_REQUEST
