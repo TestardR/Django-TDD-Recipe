@@ -193,3 +193,60 @@ class TestPrivateRecipeApi:
         assert ingredients.count() == 2
         assert ingredient1 in ingredients
         assert ingredient2 in ingredients
+
+    def test_partial_update_recipe(self, auto_login_user, api_client):
+        """ Test updating a recipe with patch """
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe = Recipe.objects.create(user=auto_login_user, **payload)
+        tag = Tag.objects.create(user=auto_login_user, name='Vegan')
+        recipe.tags.add(tag)
+
+        new_tag = Tag.objects.create(user=auto_login_user, name='Indian')
+        payload = {
+            'title': 'Indian Recipe',
+            'tags': [new_tag.id]
+        }
+        url = detail_url(recipe.id)
+        api_client.patch(url, payload)
+
+        recipe.refresh_from_db()
+
+        assert recipe.title == payload['title']
+
+        tags = recipe.tags.all()
+        assert tags.count() == 1
+        assert new_tag in tags
+
+
+    def test_full_update_recip(self, auto_login_user, api_client):
+        """ Test updating a recipe with put """
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe = Recipe.objects.create(user=auto_login_user, **payload)
+        tag = Tag.objects.create(user=auto_login_user, name='Vegan')
+        recipe.tags.add(tag)
+
+        payload = {
+            'title': 'Spaghetti',
+            'time_minutes': 25,
+            'price': 6.00
+        }
+
+        url = detail_url(recipe.id)
+        api_client.put(url, payload)
+
+        recipe.refresh_from_db()
+
+        assert recipe.title == payload['title']
+        assert recipe.time_minutes == payload['time_minutes']
+        tags = recipe.tags.all()
+        assert tags.count() == 0
