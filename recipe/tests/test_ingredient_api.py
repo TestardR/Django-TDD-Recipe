@@ -105,7 +105,7 @@ class TestPrivateIngredientsApi:
         assert exists == True
 
     def test_create_ingredient_invalid(self, auto_login_user, api_client):
-        """Test creating a new tag with invalid payload"""
+        """Test creating a ingredient tag with invalid payload"""
         payload = {'name': ''}
         res = api_client.post(INGREDIENTS_URL, payload)
 
