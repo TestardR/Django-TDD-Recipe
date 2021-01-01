@@ -3,8 +3,9 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
+from unittest.mock import patch
 
-from recipe.models import Recipe, Tag, Ingredient
+from recipe.models import Recipe, Tag, Ingredient, recipe_image_file_path
 from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
 
 RECIPES_URL = reverse('recipe:recipe-list')
@@ -52,6 +53,17 @@ def test_recipe_str(create_user):
     )
 
     assert str(recipe) == recipe.title
+
+
+@patch('uuid.uuid4')
+def test_recipe_file_name_uuid(mock__uuid):
+    """ Test that image is saved in the correct location """
+    uuid = 'test-uuid'
+    mock__uuid.return_value = uuid
+    file_path = recipe_image_file_path(None, 'myimage.jpg')
+
+    exp_path = f'uploads/recipe/{uuid}.jpg'
+    assert file_path == exp_path
 
 
 class TestPublicRecipeApi:
@@ -221,7 +233,6 @@ class TestPrivateRecipeApi:
         tags = recipe.tags.all()
         assert tags.count() == 1
         assert new_tag in tags
-
 
     def test_full_update_recip(self, auto_login_user, api_client):
         """ Test updating a recipe with put """
