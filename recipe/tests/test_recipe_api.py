@@ -1,9 +1,13 @@
+import tempfile
+import os
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch
+from PIL import Image
+
 
 from recipe.models import Recipe, Tag, Ingredient, recipe_image_file_path
 from recipe.serializers import RecipeSerializer, RecipeDetailSerializer
@@ -14,6 +18,11 @@ RECIPES_URL = reverse('recipe:recipe-list')
 def detail_url(recipe_id):
     """ Return recipe URL """
     return reverse('recipe:recipe-detail', args=[recipe_id])
+
+
+def image_upload_url(recipe_id):
+    """ Return URL for recipe image upload """
+    return reverse('recipe:recipe-upload-image', args=[recipe_id])
 
 
 @pytest.fixture
@@ -261,3 +270,49 @@ class TestPrivateRecipeApi:
         assert recipe.time_minutes == payload['time_minutes']
         tags = recipe.tags.all()
         assert tags.count() == 0
+
+
+class TestRecipeImageUpload:
+
+    @pytest.fixture
+    def remove_image(self, recipe):
+        recipe.image.delete()
+
+    def test_upload_image_to_recipe(self, auto_login_user, api_client):
+        """ Test uploading an email to recipe """
+
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe = Recipe.objects.create(user=auto_login_user, **payload)
+        url = image_upload_url(recipe.id)
+
+        with tempfile.NamedTemporaryFile(suffix='.jpg') as ntf:
+            img = Image.new('RGB', (10, 10))
+            img.save(ntf, format='JPEG')
+            ntf.seek(0)
+            res = api_client.post(url, {'image': ntf}, format='multipart')
+
+        recipe.refresh_from_db()
+
+        assert res.status_code == status.HTTP_200_OK
+        assert 'image' in res.data
+        assert os.path.exists(recipe.image.path) == True
+
+    def test_upload_image_bad_request(self, auto_login_user, api_client):
+        """ Test upload an invalid image """
+
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe = Recipe.objects.create(user=auto_login_user, **payload)
+        url = image_upload_url(recipe.id)
+        res = api_client.post(url, {'image': 'notimage'}, format='multipart')
+
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
