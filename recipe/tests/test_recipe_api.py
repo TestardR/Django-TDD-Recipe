@@ -316,3 +316,49 @@ class TestRecipeImageUpload:
         res = api_client.post(url, {'image': 'notimage'}, format='multipart')
 
         assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_filter_recipe_by_tags(self, auto_login_user, api_client):
+        """ Test returning recipes with specific tags """
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe1 = Recipe.objects.create(user=auto_login_user, **payload)
+        recipe2 = Recipe.objects.create(user=auto_login_user, **payload)
+        tag1 = Tag.objects.create(user=auto_login_user, name='Vegan')
+        tag2 = Tag.objects.create(user=auto_login_user, name='Spicy')
+        recipe1.tags.add(tag1)
+        recipe2.tags.add(tag2)
+
+        res = api_client.get(RECIPES_URL, {'tags': f'{tag1.id}'})
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+
+        assert serializer1.data in res.data
+        assert serializer2.data not in res.data
+
+    def test_filter_recipes_by_ingredients(self, auto_login_user, api_client):
+        """ Test returning recipes with specific ingredients """
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe1 = Recipe.objects.create(user=auto_login_user, **payload)
+        recipe2 = Recipe.objects.create(user=auto_login_user, **payload)
+        ingredient1 = Ingredient.objects.create(user=auto_login_user, name='Feta Cheese')
+        ingredient2 = Ingredient.objects.create(user=auto_login_user, name='Tarama')
+        recipe1.ingredients.add(ingredient1)
+        recipe2.ingredients.add(ingredient2)
+
+        res = api_client.get(RECIPES_URL, {'ingredients': f'{ingredient1.id}'})
+
+        serializer1 = RecipeSerializer(recipe1)
+        serializer2 = RecipeSerializer(recipe2)
+
+        assert serializer1.data in res.data
+        assert serializer2.data not in res.data 
