@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 
 from recipe import models
-from recipe.models import Ingredient
+from recipe.models import Ingredient, Recipe
 from recipe.serializers import IngredientSerializer
 
 INGREDIENTS_URL = reverse('recipe:ingredient-list')
@@ -110,3 +110,45 @@ class TestPrivateIngredientsApi:
         res = api_client.post(INGREDIENTS_URL, payload)
 
         assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_retrieve_ingredientss_assigned_to_recipes(self, auto_login_user, api_client):
+        """ Test filtering ingredients by those assigned to recipes """
+        ingredient1 = Ingredient.objects.create(user=auto_login_user, name='Tarama')
+        ingredient2 = Ingredient.objects.create(user=auto_login_user, name='Bamboo')
+
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe = Recipe.objects.create(user=auto_login_user, **payload)
+        recipe.ingredients.add(ingredient1)
+
+        res = api_client.get(INGREDIENTS_URL, {'assigned_only': 1})
+        serializer1 = IngredientSerializer(ingredient1)
+        serializer2 = IngredientSerializer(ingredient2)
+
+        assert serializer1.data in res.data
+        assert serializer2.data not in res.data
+
+    def test_retrieve_tags_assigned_unique(self,  auto_login_user, api_client):
+        """ Test filtering ingredients by assigned returns unique items """
+        ingredient = Ingredient.objects.create(user=auto_login_user, name='Breakfast')
+        Ingredient.objects.create(user=auto_login_user, name='Lunch')
+
+        payload = {
+            'title': 'Sample Recipe',
+            'time_minutes': 10,
+            'price': 5.00
+        }
+
+        recipe1 = Recipe.objects.create(user=auto_login_user, **payload)
+        recipe1.ingredients.add(ingredient)
+        recipe2 = Recipe.objects.create(user=auto_login_user, **payload)
+        recipe2.ingredients.add(ingredient)
+
+        res = api_client.get(INGREDIENTS_URL, {'assigned_only': 1})
+
+        assert len(res.data) == 1
+

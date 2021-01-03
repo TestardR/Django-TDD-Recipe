@@ -274,10 +274,6 @@ class TestPrivateRecipeApi:
 
 class TestRecipeImageUpload:
 
-    @pytest.fixture
-    def remove_image(self, recipe):
-        recipe.image.delete()
-
     def test_upload_image_to_recipe(self, auto_login_user, api_client):
         """ Test uploading an email to recipe """
 
@@ -301,6 +297,8 @@ class TestRecipeImageUpload:
         assert res.status_code == status.HTTP_200_OK
         assert 'image' in res.data
         assert os.path.exists(recipe.image.path) == True
+
+        recipe.image.delete()
 
     def test_upload_image_bad_request(self, auto_login_user, api_client):
         """ Test upload an invalid image """
@@ -350,8 +348,10 @@ class TestRecipeImageUpload:
 
         recipe1 = Recipe.objects.create(user=auto_login_user, **payload)
         recipe2 = Recipe.objects.create(user=auto_login_user, **payload)
-        ingredient1 = Ingredient.objects.create(user=auto_login_user, name='Feta Cheese')
-        ingredient2 = Ingredient.objects.create(user=auto_login_user, name='Tarama')
+        ingredient1 = Ingredient.objects.create(
+            user=auto_login_user, name='Feta Cheese')
+        ingredient2 = Ingredient.objects.create(
+            user=auto_login_user, name='Tarama')
         recipe1.ingredients.add(ingredient1)
         recipe2.ingredients.add(ingredient2)
 
@@ -361,4 +361,4 @@ class TestRecipeImageUpload:
         serializer2 = RecipeSerializer(recipe2)
 
         assert serializer1.data in res.data
-        assert serializer2.data not in res.data 
+        assert serializer2.data not in res.data
